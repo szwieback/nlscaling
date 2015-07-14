@@ -1,0 +1,32 @@
+    nlscaling
+    
+    Python 2.7 code for the estimation of error variances of soil moisture products that are possibly nonlinearly related
+    
+    The estimation is based on the triple collocation technique and extensions thereof, which are all applied in testScnearios/testEstimation.py
+    Additionaly, approximate inference methods (e.g. Markov Chain Monte Carlo, variational methods, etc.) for the probabilistic model underlying the variational EM algorithm for error estimation are implemented; these are all compared in testScenarios/testApproximateInference.py  
+    -----------------------------------------------------------
+    
+    zwieback@ifu.baug.ethz.ch
+    
+    Copyright (C) {2015}  {Simon Zwieback}
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    
+    -----------------------------------------------------------
+    
+    Includes modifications of previously released source code (GNU):
+    please refer to skewNorma/skew_normal.py and core TripleCollocationCDF.py for details
+    
+    
