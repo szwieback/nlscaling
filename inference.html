@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Approximate inference &mdash; nlscaling 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="nlscaling 1.0 documentation" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="approximate-inference">
+<h1>Approximate inference<a class="headerlink" href="#approximate-inference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The following code is used for describing posterior probability intervals (unknown soil moisture given observations). The <em>PyramidGaussianBeliefNetwork</em> <code class="docutils literal"><span class="pre">inputPGBN</span></code> contains the structure and the dictionary <code class="docutils literal"><span class="pre">valuesdict</span></code> the scalar observations of the products. The variable <code class="docutils literal"><span class="pre">intervalsize</span></code> can be set to a quantile q (e.g. 0.1) so that the methods return the tuple of quantiles [q/2, 0.5, 1-q/2]; alternatively False yields [mean - stdev, mean, mean + stdev] of the posterior distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">GaussianBeliefNetwork</span> <span class="kn">as</span> <span class="nn">gbn</span>
+<span class="kn">import</span> <span class="nn">GaussianRandomVariable</span> <span class="kn">as</span> <span class="nn">grv</span>
+<span class="kn">import</span> <span class="nn">MeanMap</span> <span class="kn">as</span> <span class="nn">mm</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="n">anom</span><span class="o">=</span><span class="n">grv</span><span class="o">.</span><span class="n">GaussianRandomVariable</span><span class="p">(</span><span class="s">&#39;t&#39;</span><span class="p">,[],[],</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">meas1</span><span class="o">=</span><span class="n">grv</span><span class="o">.</span><span class="n">GaussianRandomVariable</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">,[</span><span class="n">anom</span><span class="p">],[</span><span class="n">mm</span><span class="o">.</span><span class="n">LinearMeanMap</span><span class="p">([</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span><span class="mf">0.8</span><span class="p">])],</span><span class="mf">3e-2</span><span class="p">)</span>
+<span class="n">meas2</span><span class="o">=</span><span class="n">grv</span><span class="o">.</span><span class="n">GaussianRandomVariable</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,[</span><span class="n">anom</span><span class="p">],[</span><span class="n">mm</span><span class="o">.</span><span class="n">QuadraticMeanMap</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span><span class="mf">1.2</span><span class="p">,</span><span class="o">-</span><span class="mf">0.15</span><span class="p">])],</span><span class="mf">3e-2</span><span class="p">)</span>
+<span class="n">meas3</span><span class="o">=</span><span class="n">grv</span><span class="o">.</span><span class="n">GaussianRandomVariable</span><span class="p">(</span><span class="s">&#39;z&#39;</span><span class="p">,[</span><span class="n">anom</span><span class="p">],[</span><span class="n">mm</span><span class="o">.</span><span class="n">QuadraticMeanMap</span><span class="p">([</span><span class="mf">0.2</span><span class="p">,</span><span class="mf">1.1</span><span class="p">,</span><span class="mf">0.1</span><span class="p">])],</span><span class="mf">6e-2</span><span class="p">)</span>
+<span class="n">inputPGBN</span><span class="o">=</span><span class="n">gbn</span><span class="o">.</span><span class="n">PyramidGaussianBeliefNetwork</span><span class="p">(</span><span class="n">anom</span><span class="p">,[</span><span class="n">meas1</span><span class="p">,</span><span class="n">meas2</span><span class="p">,</span><span class="n">meas3</span><span class="p">])</span>
+<span class="n">valuesdict</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;x&#39;</span><span class="p">:</span><span class="mf">1.3</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">:</span><span class="mf">2.2</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">:</span><span class="mf">1.7</span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h2>
+<p>Based on a linearization of the mean map:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">intervli</span><span class="o">=</span><span class="n">inputPGBN</span><span class="o">.</span><span class="n">interval_conditional_density_topnode</span><span class="p">(</span><span class="n">valuesdict</span><span class="p">,</span><span class="n">intervalsize</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;linear: &#39;</span>
+<span class="k">print</span> <span class="n">intervli</span>
+</pre></div>
+</div>
+<p>Based on the Laplace approximation (Gaussian approximation around the posterior mode):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">intervla</span><span class="o">=</span><span class="n">inputPGBN</span><span class="o">.</span><span class="n">interval_conditional_density_topnode</span><span class="p">(</span><span class="n">valuesdict</span><span class="p">,</span><span class="n">intervalsize</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;laplace&#39;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;Laplace: &#39;</span>
+<span class="k">print</span> <span class="n">intervla</span>
+</pre></div>
+</div>
+<p>Based on a variational distribution (assumed Gaussian) by minimizing the Kullback-Leibler divergence, i.e. a function of the total difference of the unknown posterior and the variational distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">intervva</span><span class="o">=</span><span class="n">inputPGBN</span><span class="o">.</span><span class="n">interval_conditional_density_topnode</span><span class="p">(</span><span class="n">valuesdict</span><span class="p">,</span><span class="n">intervalsize</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;variational&#39;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;variational: &#39;</span>
+<span class="k">print</span> <span class="n">intervva</span>
+</pre></div>
+</div>
+<p>As opposed to the previous methods, which are all exact when the mean maps are linear, the approach based on quadrature (numerical evaluation of the posterior density function) is only approximate:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">intervqu</span><span class="o">=</span><span class="n">inputPGBN</span><span class="o">.</span><span class="n">interval_conditional_density_topnode</span><span class="p">(</span><span class="n">valuesdict</span><span class="p">,</span><span class="n">intervalsize</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;quadrature&#39;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;quadrature: &#39;</span>
+<span class="k">print</span> <span class="n">intervqu</span>
+</pre></div>
+</div>
+<p>So is the sampling method (Metropolis Markov Chain Monte Carlo based on a Gaussian proposal distribution), drawing 10000 samples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">intervsa</span><span class="o">=</span><span class="n">inputPGBN</span><span class="o">.</span><span class="n">interval_conditional_density_topnode</span><span class="p">(</span><span class="n">valuesdict</span><span class="p">,</span><span class="n">intervalsize</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;sampling&#39;</span><span class="p">,</span><span class="n">samplesize</span><span class="o">=</span><span class="mf">1e4</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;sampling: &#39;</span>
+<span class="k">print</span> <span class="n">intervsa</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="requirements.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="licence.html">Licence</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/inference.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Simon Zwieback.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/inference.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
