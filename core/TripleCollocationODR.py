@@ -2,7 +2,7 @@
 TripleCollocationODR computes triple collocation variances and calibration constants and returns them as a PyramidGaussianBeliefNetwork
 The underlying soil moisture variable is considered to be deterministic.
 It can handle nonlinear polynomials in the mean maps in an approximate fashion.
-The variances and calibration constants are computed iteratively: the calibration constants are obtained using orthogonal distance regressions (from scipy), i.e. by considering the errors in both data sets.
+The variances and calibration constants are computed iteratively: the calibration constants are obtained using orthogonal distance regressions (from scipy; in the paper it is referred to as total least squares), i.e. by considering the errors in both data sets.
 The time series are subsequently 'inverted' (applying the inverse [as far as possible, the assumptions to make this a bijection are encoded in the used mean map]).
 Subsequently, a 'bare' triple collocation is run on these 'rescaled' data, and the obtained variances are scaled back (using only the linear term); they form the new estimates for the next regression.
 The starting values are obtained from a standard triple collocation.

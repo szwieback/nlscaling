@@ -2,7 +2,7 @@
 Provides the class GaussianRandomVariable, which is a normally distributed random variable whose conditional mean depends on the values of its parents via a MeanMap
 This class is based upon the RandomVariable class, which is abstract and cannot be instantiated.
 
-The daughter classes StudentRandomVariable and SkewNormalRandomVariable are only implemented in a rudimentary fashion.
+The daughter classes StudentRandomVariable, MixtureGaussianRandomVariable, and SkewNormalRandomVariable are only implemented in a rudimentary fashion.
 
 The key methods of GaussianRandomVariable are:
     - drawing from the conditional distribution and evaluating the conditional density
@@ -106,7 +106,51 @@ class SkewNormalRandomVariable(RandomVariable):
         # returns the conditional variance
         return self.variance
 
-
+class MixtureGaussianRandomVariable(RandomVariable):
+    # only used for simulation
+    # parameterized in terms of weights, dmeans, and variances of mixtures
+    def __init__(self,name,parentslist,meanmapslist,weights,dmeans,variances):
+        # constructor method:
+        # input parameters:
+        #    - name, string: name of random variable
+        #    - parentslist, list of random variables RandomVariable: the parents
+        #    - meanmaplist, list of MeanMap: the mean maps in same order as in parentslist
+        #    - weights, list of float: weights of the mixture components; they sum to 1
+        #    - dmeans, list of float: offsets (deviation of component mean from that provided by the mapping) of the individual components; their weighted sum should be 0
+        #    - variances, float: variances of individual components
+        assert np.abs(np.sum(np.array(weights))-1)<1e-6
+        assert np.abs(np.sum(np.array(weights)*np.array(dmeans)))<1e-6
+        self.variance=np.sum(np.array(weights)*(np.array(variances)+np.array(dmeans)**2)) # the conditional variance
+        self.name=name
+        self.parents=parentslist
+        self.meanmaps=meanmapslist
+        self.weights=weights
+        self.dmeans=dmeans
+        self.variances=variances
+    def conditional_variance(self):
+        # returns the conditional variance
+        return self.variance
+    def draw_from_conditional_distribution(self,parentsvalues,size=1):
+        # returns random samples from the conditional distribution given the values of the parents
+        # input parameters:
+        #    - parentsvalues, list of floats: values of the parents
+        #    - size, integer (optional): number of i.i.d. samples drawn
+        if len(parentsvalues) == 0:
+            condmeans=np.zeros(size)
+        else:
+            condmeans=self.conditional_mean(parentsvalues)
+        # numpy trickery: first randomly determine the component by drawing from a uniform distribution and comparing to the cumulative weights
+        cumw=np.cumsum(self.weights)
+        mixturei=np.random.random_sample(size)        
+        func1d=lambda x:np.nonzero(cumw > x)[0][0]
+        vfunc=np.vectorize(func1d)
+        ind=vfunc(mixturei)
+        # draw from the mixture distribution by adding a Gaussian variable distributed according the corresponding mixture to condmeans
+        admeans=np.array(self.dmeans)
+        avariances=np.array(self.variances)
+        vals= np.random.randn(size)*np.sqrt(avariances[ind])+admeans[ind]+condmeans
+        return np.array(vals)    
+    
 class GaussianRandomVariable(RandomVariable):
     def __init__(self,name,parentslist,meanmapslist,variance):
         # constructor method:
