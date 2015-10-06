@@ -44,7 +44,7 @@
 <ul class="simple">
 <li><strong>Triple Collocation</strong> vanilla triple collocation (using instrumental variable rescaling)</li>
 <li><strong>Variational Expectation Maximization (EM) algorithm</strong> based on a parametric probabilistic model (normal distributions)</li>
-<li><strong>Orthogonal Distance Regression</strong> combined with triple collocation</li>
+<li><strong>Orthogonal Distance Regression</strong> (ODR, equivalently: total least-squares TLS) combined with triple collocation</li>
 <li><strong>Cumulative Distribution Function matching</strong> combined with triple collocation</li>
 </ul>
 <p>The probabilistic model underlying the variational EM describes both the unknown (latent) soil moisture and the observable products as random variables. A relevant question which arises both in the context of estimation using the variational EM algorithm and of product merging is that of inference of the underlying soil moisture given observations of (some) of the products, i.e. describing its probability distribution conditioned on the observations. When the relations (also called mean maps) between the products are nonlinear, this problem is difficult and approximate inference methods are required. Among those implemented are</p>

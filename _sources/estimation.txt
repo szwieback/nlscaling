@@ -36,7 +36,7 @@ Subsequently vanilla triple collocation (TC) with instrumental variable rescalin
     outp['variances']['tc']=dict([(n.name,n.variance) for n in tcPGBN.children()])
     outp['meanmapparams']['tc']=dict([(n.name,n.meanmaps[0].params) for n in tcPGBN.children()])
 
-Followed by TC using linear orthogonal distance regression (ODR) rescaling::
+Followed by TC using linear orthogonal distance regression (ODR), or total least-squares (TLS), rescaling::
 
     # linear ODR TC
     inputPGBNl=copy.deepcopy(tcPGBN)
