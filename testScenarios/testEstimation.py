@@ -18,35 +18,47 @@ import TripleCollocationODR as tcODR
 import TripleCollocationCDF as tcCDF
 import copy
 from pprint import pprint
-def testEstimation(inputPGBN,seed0=1,size=1000,verbose=False,rvtype='Gaussian',**kwargs):
+def testEstimation(inputPGBNi,seed0=1,size=1000,verbose=False,rvtype='Gaussian',**kwargs):
     # simulates time series based on inputPGBN (three children) and then estimates the parameters (mean maps, variances) by
     #    - triple collocation (linear mean maps)
     #    - variational EM (using the triple collocation and the actual parameters as starting values)
     # Input parameters:
-    #    - inputPGBN, PyramidGaussianBeliefNetwork: probabilistic model of soil moisture products
+    #    - inputPGBNi, PyramidGaussianBeliefNetwork: probabilistic model of soil moisture products
     #    - seed0, integer (optional): set seed to seed0, if None: do not change seed
     #    - size, integer (optional): number of samples
     #    - verbose, boolean (optional): print summary of EM results
     #    - rvtype, string (optional): distribution to be used (Gaussian, Student, SkewNormal)
     #    - kwargs, dictionary (optional): additional parameters pertaining to the distributions    
     if seed0 is not None: np.random.seed(seed0)
-    assert len(inputPGBN.children()) == 3
+    assert len(inputPGBNi.children()) == 3
     
     try:
         outp={'variances':{},'meanmapparams':{}}    
     
         # preparation for output
         formats="{0:.5f}"
-        variances=dict([(n.name,formats.format(n.variance)) for n in inputPGBN.children()])
-        mmparams=dict([(n.name,[formats.format(i) for i in n.meanmaps[0].params]) for n in inputPGBN.children()])
-        outp['variances']['actual']=dict([(n.name,n.variance) for n in inputPGBN.children()])
-        outp['meanmapparams']['actual']=dict([(n.name,n.meanmaps[0].params) for n in inputPGBN.children()])
+        variances=dict([(n.name,formats.format(n.variance)) for n in inputPGBNi.children()])
+        mmparams=dict([(n.name,[formats.format(i) for i in n.meanmaps[0].params]) for n in inputPGBNi.children()])
+        outp['variances']['actual']=dict([(n.name,n.variance) for n in inputPGBNi.children()])
+        outp['meanmapparams']['actual']=dict([(n.name,n.meanmaps[0].params) for n in inputPGBNi.children()])
         
         # simulate time series and construct data frame
-        inputPBN=assemble_PBN(inputPGBN,rvtype=rvtype,**kwargs)
+        inputPBN=assemble_PBN(inputPGBNi,rvtype=rvtype,**kwargs)
         res=inputPBN.draw_from_joint(size=size)
-        namelistv=[c.name for c in inputPGBN.children()]
+        namelistv=[c.name for c in inputPGBNi.children()]
         ts=tsdf.TimeSeriesDataFrame(namelistv,[res[n] for n in namelistv])
+        
+        # switch quadratic mean maps if necessary
+        if kwargs.has_key('switchquadratic') and kwargs['switchquadratic']:
+            inputPGBN=copy.deepcopy(inputPGBNi)
+            childrefname='y'
+            children=inputPGBN.children()
+            children[0].meanmaps[0]=children[0].meanmaps[0].convert_to_quadratic()
+            children[1].meanmaps[0]=children[1].meanmaps[0].linearize(0)
+            
+        else:
+            childrefname='x'
+            inputPGBN=copy.deepcopy(inputPGBNi)
         
         # estimate by triple collocation
         tcPGBN=tc.TripleCollocation(ts)
@@ -71,11 +83,11 @@ def testEstimation(inputPGBN,seed0=1,size=1000,verbose=False,rvtype='Gaussian',*
         outp['meanmapparams']['emtcl']=dict([(n.name,n.meanmaps[0].params) for n in emtclPGBN.children()])    
         
         # estimate the parameters by ODR TC
-        odrPGBN=tcODR.TripleCollocationODR(ts,inputPGBN,'x')
+        odrPGBN=tcODR.TripleCollocationODR(ts,inputPGBN,childrefname)
         variancesodr=dict([(n.name,formats.format(n.variance)) for n in odrPGBN.children()])
         mmparamsodr=dict([(n.name,[formats.format(i) for i in n.meanmaps[0].params]) for n in odrPGBN.children()])
         outp['variances']['tcodr']=dict([(n.name,n.variance) for n in odrPGBN.children()])
-        outp['meanmapparams']['tcodr']=dict([(n.name,n.meanmaps[0].params) for n in odrPGBN.children()])    
+        outp['meanmapparams']['tcodr']=dict([(n.name,n.meanmaps[0].params) for n in odrPGBN.children()])           
         
         # estimate by variational EM using TC results as initial values
         emtcPGBN=copy.deepcopy(odrPGBN)
@@ -141,7 +153,8 @@ def testEstimation(inputPGBN,seed0=1,size=1000,verbose=False,rvtype='Gaussian',*
         return outp
     except:
         raise
-        #return None
+        print 'error'
+        return None
     
 def assemble_PBN(inputPGBN,rvtype='Gaussian',**kwargs):
     if rvtype == 'Gaussian':
@@ -172,6 +185,14 @@ def assemble_PBN(inputPGBN,rvtype='Gaussian',**kwargs):
         rvtopnodem=grv.MixtureGaussianRandomVariable(rvtopnode.name,[],[],weights,dmeans,variances)
         rvchildren=inputPGBN.children()
         rvchildrenm=[grv.GaussianRandomVariable(rv.name,[rvtopnodem],rv.meanmaps,rv.variance) for rv in rvchildren]
+    elif rvtype == 'TruncatedGaussian':
+        lowerlimit=kwargs['lowerlimit']
+        upperlimit=kwargs['upperlimit']
+        variancenottruncated=kwargs['variancenottruncated']
+        rvtopnode=inputPGBN.topnode()
+        rvtopnodem=grv.TruncatedGaussianRandomVariable(rvtopnode.name,[],[],variancenottruncated,lowerlimit,upperlimit)
+        rvchildren=inputPGBN.children()
+        rvchildrenm=[grv.GaussianRandomVariable(rv.name,[rvtopnodem],rv.meanmaps,rv.variance) for rv in rvchildren]        
     else:
         raise NotImplementedError
     rvlistm=[rvtopnodem]+rvchildrenm

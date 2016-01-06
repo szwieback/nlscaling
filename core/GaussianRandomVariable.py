@@ -11,6 +11,7 @@ The key methods of GaussianRandomVariable are:
 '''
 
 import numpy as np
+from scipy.stats import truncnorm 
 class RandomVariable(object):
     # abstract class that cannot be instantiated
     # provides several distribution-independent methods
@@ -72,6 +73,39 @@ class StudentRandomVariable(RandomVariable):
         # returns the conditional variance
         return self.variance
 
+class TruncatedGaussianRandomVariable(RandomVariable):
+    # only used for simulation, only implemented for 'orphan' nodes
+    # conditional mean is the mean of the untruncated distribution!
+    def __init__(self,name,parentslist,meanmapslist,variancenottruncated,lowerlimit,upperlimit):
+        # constructor method:
+        # input parameters:
+        #    - name, string: name of random variable
+        #    - parentslist, list of random variables RandomVariable: the parents
+        #    - meanmaplist, list of MeanMap: the mean maps in same order as in parentslist
+        #    - variancenottruncated, float: second conditional moment if truncation were not applied
+        #    - lowerlimit, float: lower truncation limit in the 'space' of the standard normal distribution
+        #    - upperlimit, float: upper truncation limit in the 'space' of the standard normal distribution
+        self.name=name
+        self.parents=parentslist
+        self.meanmaps=meanmapslist
+        self.upperlimit=upperlimit
+        self.lowerlimit=lowerlimit
+        self.variancenottruncated=variancenottruncated
+    def draw_from_conditional_distribution(self,parentsvalues,size=1):
+        # returns random samples from the conditional distribution given the values of the parents
+        # input parameters:
+        #    - parentsvalues, list of floats: values of the parents
+        #    - size, integer (optional): number of i.i.d. samples drawn
+        if len(parentsvalues) == 0:
+            rvtemp=truncnorm(self.lowerlimit,self.upperlimit,loc=0,scale=np.sqrt(self.variancenottruncated))
+            vals=rvtemp.rvs(size=size)
+        else:
+            raise NotImplementedError
+        return vals
+    def conditional_variance(self):
+        # returns the conditional variance
+        rvtemp=truncnorm(self.lowerlimit,self.upperlimit,loc=0,scale=np.sqrt(self.variancenottruncated))
+        return rvtemp.moment(2)
 
 class SkewNormalRandomVariable(RandomVariable):
     # only used for simulation
